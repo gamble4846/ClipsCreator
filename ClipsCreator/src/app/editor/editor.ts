@@ -28,6 +28,10 @@ export class Editor implements AfterViewInit, OnDestroy {
   videoWaveformData: number[] = [];
   audioWaveformData: number[][] = [];
 
+  // Track states
+  audioEnded: boolean[] = [];
+  trackDurations: number[] = []; // [video_duration, audio1_duration, audio2_duration, ...]
+
   ngAfterViewInit(): void {
     this.initializeTimeline();
   }
@@ -36,6 +40,7 @@ export class Editor implements AfterViewInit, OnDestroy {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       this.selectedVideo = input.files[0];
+      this.trackDurations = [0]; // Initialize with video duration placeholder
       this.setupVideoPlayback();
     }
   }
@@ -45,6 +50,10 @@ export class Editor implements AfterViewInit, OnDestroy {
     if (input.files) {
       this.selectedAudios = Array.from(input.files);
       this.mutedTracks = new Array(this.selectedAudios.length).fill(false);
+      this.audioEnded = new Array(this.selectedAudios.length).fill(false);
+      // Initialize track durations for audio files (will be updated when metadata loads)
+      const existingVideoDuration = this.trackDurations[0] || 0;
+      this.trackDurations = [existingVideoDuration, ...new Array(this.selectedAudios.length).fill(0)];
       this.setupAudioPlayback();
     }
   }
@@ -53,7 +62,10 @@ export class Editor implements AfterViewInit, OnDestroy {
     this.selectedAudios.splice(index, 1);
     this.audioWaveformData.splice(index, 1);
     this.mutedTracks.splice(index, 1);
+    this.audioEnded.splice(index, 1);
+    this.trackDurations.splice(index + 1, 1); // Remove audio duration (index + 1 because 0 is video)
     this.setupAudioPlayback();
+    this.updateMaxTimelineDuration();
     this.updateTimeline();
   }
 
@@ -64,7 +76,10 @@ export class Editor implements AfterViewInit, OnDestroy {
     }
   }
 
+
   private initializeTimeline(): void {
+    // Initialize with a default 60-second timeline
+    this.timelineDuration = 60;
     this.timeMarkers = [];
     for (let i = 0; i <= 60; i += 5) {
       this.timeMarkers.push(this.formatTime(i));
@@ -84,7 +99,8 @@ export class Editor implements AfterViewInit, OnDestroy {
       video.src = videoUrl;
 
       video.onloadedmetadata = () => {
-        this.timelineDuration = video.duration || 60;
+        this.trackDurations[0] = video.duration || 60;
+        this.updateMaxTimelineDuration();
         this.generateVideoWaveform();
         this.updateTimeline();
         this.synchronizePlayback();
@@ -107,6 +123,26 @@ export class Editor implements AfterViewInit, OnDestroy {
     this.selectedAudios.forEach((audioFile, index) => {
       const audio = new Audio(URL.createObjectURL(audioFile));
       audio.preload = 'metadata';
+
+      // Track audio duration when metadata loads
+      audio.addEventListener('loadedmetadata', () => {
+        this.trackDurations[index + 1] = audio.duration || 0;
+        this.updateMaxTimelineDuration();
+        this.updateTimeline();
+        // Redraw the waveform with the correct duration
+        setTimeout(() => this.drawWaveform('audio', index), 100);
+      });
+
+      // Handle audio track ending
+      audio.addEventListener('ended', () => {
+        this.audioEnded[index] = true;
+      });
+
+      // Reset ended state when audio starts playing again
+      audio.addEventListener('play', () => {
+        this.audioEnded[index] = false;
+      });
+
       this.audioElements.push(audio);
 
       // Generate waveform for this audio file
@@ -168,6 +204,7 @@ export class Editor implements AfterViewInit, OnDestroy {
   private drawWaveform(type: 'video' | 'audio', index: number): void {
     let canvas: HTMLCanvasElement;
     let waveformData: number[];
+    let trackIndex = type === 'video' ? 0 : index + 1;
 
     if (type === 'video') {
       const videoCanvases = Array.from(this.videoCanvases);
@@ -195,11 +232,16 @@ export class Editor implements AfterViewInit, OnDestroy {
     ctx.strokeStyle = type === 'video' ? '#4CAF50' : '#2196F3';
     ctx.lineWidth = 1;
 
+    // Only draw waveform up to the track's actual duration
+    const trackDuration = this.trackDurations[trackIndex] || 0;
+    const maxSamples = trackDuration > 0 ? Math.floor((trackDuration / this.timelineDuration) * waveformData.length) : waveformData.length;
+    const samplesToDraw = Math.min(maxSamples, waveformData.length);
+
     // Draw waveform
     ctx.beginPath();
     const sliceWidth = width / waveformData.length;
 
-    for (let i = 0; i < waveformData.length; i++) {
+    for (let i = 0; i < samplesToDraw; i++) {
       const x = i * sliceWidth;
       const amplitude = waveformData[i] * (height / 2 - 2);
 
@@ -211,7 +253,7 @@ export class Editor implements AfterViewInit, OnDestroy {
     }
 
     // Draw bottom half (mirrored)
-    for (let i = waveformData.length - 1; i >= 0; i--) {
+    for (let i = samplesToDraw - 1; i >= 0; i--) {
       const x = i * sliceWidth;
       const amplitude = waveformData[i] * (height / 2 - 2);
       ctx.lineTo(x, centerY + amplitude);
@@ -221,6 +263,17 @@ export class Editor implements AfterViewInit, OnDestroy {
     ctx.fillStyle = type === 'video' ? 'rgba(76, 175, 80, 0.3)' : 'rgba(33, 150, 243, 0.3)';
     ctx.fill();
     ctx.stroke();
+
+    // Draw end indicator if track is shorter than timeline
+    if (samplesToDraw < waveformData.length) {
+      const endX = samplesToDraw * sliceWidth;
+      ctx.strokeStyle = '#666';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(endX, 0);
+      ctx.lineTo(endX, height);
+      ctx.stroke();
+    }
   }
 
   private synchronizePlayback(): void {
@@ -231,36 +284,52 @@ export class Editor implements AfterViewInit, OnDestroy {
     // Start playhead animation
     this.startPlayheadAnimation();
 
-    // Synchronize audio playback with video
-    const syncAudio = () => {
-      const currentTime = video.currentTime;
-      this.audioElements.forEach(audio => {
-        if (Math.abs(audio.currentTime - currentTime) > 0.1) {
-          audio.currentTime = currentTime;
-        }
-      });
-    };
-
-    // Add event listeners for synchronization
+    // Play all tracks simultaneously when video starts
     video.addEventListener('play', () => {
       this.audioElements.forEach((audio, index) => {
         if (!this.mutedTracks[index]) {
-          audio.play();
+          // If audio has ended or hasn't started, start from beginning
+          // Otherwise, continue from current position
+          if (audio.ended || audio.currentTime === 0) {
+            audio.currentTime = 0;
+          }
+          audio.play().catch(error => {
+            console.log('Audio play failed:', error);
+          });
         }
       });
     });
 
+    // Pause all tracks when video pauses
     video.addEventListener('pause', () => {
       this.audioElements.forEach(audio => audio.pause());
     });
 
-    video.addEventListener('seeked', syncAudio);
+    // Stop all tracks when video ends
+    video.addEventListener('ended', () => {
+      this.audioElements.forEach(audio => {
+        audio.pause();
+        audio.currentTime = 0;
+      });
+    });
+
+    // Handle seeking - only seek audio tracks that have enough duration
+    video.addEventListener('seeked', () => {
+      const targetTime = video.currentTime;
+      this.audioElements.forEach(audio => {
+        // Only seek if the audio track is long enough for the target time
+        if (audio.duration && targetTime <= audio.duration) {
+          audio.currentTime = targetTime;
+        } else if (targetTime > audio.duration) {
+          // If seeking beyond audio duration, pause it or let it end naturally
+          audio.pause();
+        }
+      });
+    });
+
+    // Update playhead position
     video.addEventListener('timeupdate', () => {
       this.updatePlayheadPosition();
-      // Less frequent sync to avoid performance issues
-      if (video.currentTime % 0.5 < 0.1) {
-        syncAudio();
-      }
     });
   }
 
@@ -283,6 +352,11 @@ export class Editor implements AfterViewInit, OnDestroy {
     const video = this.videoElement.nativeElement;
     const progress = (video.currentTime / this.timelineDuration) * 100;
     this.playheadPosition = Math.min(progress, 100);
+  }
+
+  private updateMaxTimelineDuration(): void {
+    // Set timeline duration to the maximum duration across all tracks
+    this.timelineDuration = Math.max(...this.trackDurations, 60); // Minimum 60 seconds
   }
 
   private updateTimeline(): void {

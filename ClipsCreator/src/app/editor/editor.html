@@ -36,9 +36,12 @@
         </div>
       </div>
 
-      <div class="track audio-track" *ngFor="let audio of selectedAudios; let i = index">
+      <div class="track audio-track" *ngFor="let audio of selectedAudios; let i = index" [class.ended]="audioEnded[i]">
         <div class="track-header">
-          <span class="track-label">🎵 Audio {{ i + 1 }}</span>
+          <span class="track-label">
+            🎵 Audio {{ i + 1 }}
+            <span class="track-status" *ngIf="audioEnded[i]">(Ended)</span>
+          </span>
           <span class="track-info">{{ audio.name }}</span>
           <div class="track-controls">
             <button class="mute-btn" [class.muted]="mutedTracks[i]" (click)="toggleMute(i)">

@@ -144,6 +144,12 @@
   border-color: #2196F3;
 }
 
+.track.audio-track.ended {
+  background-color: #3a2a2a;
+  border-color: #666;
+  opacity: 0.7;
+}
+
 .track-header {
   display: flex;
   justify-content: space-between;
@@ -161,6 +167,12 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.track-status {
+  font-size: 11px;
+  color: #aaa;
+  font-style: italic;
 }
 
 .track-info {
