@@ -1,0 +1,246 @@
+{
+    "design_system": {
+      "overall_style": {
+        "theme": "dark-modern",
+        "aesthetic_keywords": [
+          "sleek",
+          "high-contrast",
+          "minimalistic",
+          "dashboard-oriented",
+          "professional",
+          "rounded-corners",
+          "soft-shadows",
+          "dense-but-clear",
+          "card-based"
+        ],
+        "layout_structure": {
+          "global_layouts": [
+            "three-column email layout with left sidebar, middle list view, right detail view",
+            "analytics dashboard with sidebar navigation, top metrics, middle charts, bottom tables",
+            "multi-panel card grid with forms, charts, calendars and statistics"
+          ],
+          "common_patterns": {
+            "sidebars": {
+              "width": "fixed (approx 260px)",
+              "background": "sidebar color token",
+              "sections": [
+                "primary navigation group",
+                "document group",
+                "settings/help",
+                "user identity footer"
+              ],
+              "interaction": "hover highlights, selected state using primary/accent"
+            },
+            "content_panes": {
+              "card_grid": "variable columns depending on screen width",
+              "panel_spacing": "consistent padding + grid gap (1–1.5rem)",
+              "scrollable_regions": "middle and right sections in email layout"
+            },
+            "split_view": "frequent use of 2–3 vertical panels with scroll"
+          }
+        }
+      },
+  
+      "color_system": {
+        "mode": "dark-first with light-mode inverse",
+        "base": {
+          "background": "var(--background)",
+          "foreground": "var(--foreground)",
+          "border": "var(--border)"
+        },
+        "semantic": {
+          "card": "var(--card)",
+          "card_foreground": "var(--card-foreground)",
+          "primary": "var(--primary)",
+          "primary_foreground": "var(--primary-foreground)",
+          "secondary": "var(--secondary)",
+          "accent": "var(--accent)",
+          "muted": "var(--muted)",
+          "destructive": "var(--destructive)"
+        },
+        "specialized": {
+          "sidebar": "var(--sidebar)",
+          "charts": [
+            "var(--chart-1)",
+            "var(--chart-2)",
+            "var(--chart-3)",
+            "var(--chart-4)",
+            "var(--chart-5)"
+          ]
+        },
+        "visual_behavior": {
+          "accent_usage": "Used sparingly (buttons, tags, selected sidebar items, active dates).",
+          "background_behavior": "Dark base, cards slightly lighter, popovers slightly lighter than cards.",
+          "chart_style": "monochromatic spectrum of purples/blue-purples"
+        }
+      },
+  
+      "typography": {
+        "fonts": {
+          "sans": "var(--font-sans)",
+          "serif": "var(--font-serif)",
+          "mono": "var(--font-mono)"
+        },
+        "styles": {
+          "headers": {
+            "weight": 600,
+            "size_scaling": "1.1x to 1.6x base"
+          },
+          "body": {
+            "weight": 400,
+            "tracking": "normal",
+            "color": "foreground"
+          },
+          "labels": {
+            "weight": 500,
+            "case": "title or sentence case"
+          }
+        }
+      },
+  
+      "radius_and_shape": {
+        "default_radius": "var(--radius)",
+        "radius_scale": {
+          "sm": "var(--radius-sm)",
+          "md": "var(--radius-md)",
+          "lg": "var(--radius-lg)",
+          "xl": "var(--radius-xl)"
+        },
+        "components": {
+          "cards": "md/lg",
+          "inputs": "md",
+          "buttons": "lg",
+          "tags": "xl"
+        }
+      },
+  
+      "shadows": {
+        "philosophy": "soft, subtle, non-intrusive depth; never harsh or elevated",
+        "tokens": {
+          "xs": "var(--shadow-xs)",
+          "sm": "var(--shadow-sm)",
+          "md": "var(--shadow-md)",
+          "lg": "var(--shadow-lg)"
+        },
+        "usage": {
+          "cards": "sm/md",
+          "modals_popovers": "md/lg",
+          "floating_buttons": "md"
+        }
+      },
+  
+      "component_system": {
+        "cards": {
+          "style": "rounded, dark, subtle border, small shadow",
+          "typography": "white or near-white text",
+          "spacing": "padding: 1–1.25rem",
+          "layout": "flex column or grid depending on content"
+        },
+        "navigation": {
+          "sidebar_nav": {
+            "background": "sidebar token",
+            "selected_bg": "sidebar-primary",
+            "selected_text": "sidebar-primary-foreground",
+            "hover_bg": "sidebar-accent",
+            "icons": "outline, monochrome",
+            "sections": "grouped with section labels"
+          },
+          "tabs": {
+            "active_state": "accent background or underline"
+          }
+        },
+        "inputs": {
+          "background": "input token",
+          "border": "border token",
+          "radius": "md",
+          "focus": {
+            "ring": "var(--ring)",
+            "outline": "none"
+          }
+        },
+        "buttons": {
+          "primary": {
+            "background": "primary",
+            "text": "primary-foreground",
+            "radius": "lg"
+          },
+          "secondary": {
+            "background": "secondary",
+            "text": "secondary-foreground"
+          },
+          "ghost": {
+            "background": "transparent",
+            "text": "foreground"
+          }
+        },
+        "tags": {
+          "background": "accent or primary",
+          "text": "accent-foreground or primary-foreground",
+          "shape": "pill"
+        },
+        "charts": {
+          "style": "smooth curves, rounded data points, no harsh gridlines",
+          "color_scheme": "sequence of chart tokens",
+          "axes": "minimal ticks, reduced labels"
+        },
+        "calendar": {
+          "selected_day_bg": "primary or accent",
+          "radius": "md",
+          "inactive_days": "muted foreground",
+          "layout": "fixed grid"
+        }
+      },
+  
+      "spacing_system": {
+        "base_unit": "var(--spacing)",
+        "scale": {
+          "xs": "0.25rem",
+          "sm": "0.5rem",
+          "md": "1rem",
+          "lg": "1.5rem",
+          "xl": "2rem"
+        },
+        "usage": {
+          "grid_gap": "md",
+          "sidebar_padding": "md/lg",
+          "card_inner_padding": "md",
+          "section_spacing": "lg"
+        }
+      },
+  
+      "interaction_patterns": {
+        "hover": {
+          "cards": "slight shadow increase",
+          "buttons": "brightness increase or accent tint",
+          "sidebar_items": "accent or primary highlight"
+        },
+        "active_pressed": {
+          "buttons": "slightly darker shade",
+          "tags": "no pressed state (static)"
+        },
+        "focus": {
+          "inputs_buttons": "ring token halo"
+        },
+        "animations": {
+          "style": "subtle, ~150–250ms ease",
+          "use_cases": [
+            "button hover",
+            "sidebar item transitions",
+            "chart point highlight"
+          ]
+        }
+      },
+  
+      "layout_principles": {
+        "density": "medium density with controlled whitespace",
+        "grid_usage": "frequent use of 2–4 column responsive grids",
+        "alignment": "left-aligned with consistent vertical rhythm",
+        "visual_hierarchy": [
+          "large numeric metrics at top (analytics screens)",
+          "cards grouped into sections",
+          "sidebar sticks to left, content scrolls independently"
+        ]
+      }
+    }
+  }
+  
