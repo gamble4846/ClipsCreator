@@ -12,8 +12,41 @@
 
   <div class="preview-container">
     <div class="preview">
-      <video #videoElement id="video-player" controls *ngIf="selectedVideo"></video>
+      <video #videoElement id="video-player" *ngIf="selectedVideo"></video>
       <div class="no-video" *ngIf="!selectedVideo">Select a video file to start editing</div>
+    </div>
+
+    <div class="custom-controls" *ngIf="selectedVideo">
+      <button class="control-btn play-pause-btn" (click)="togglePlayPause()">
+        <span *ngIf="!isPlaying">▶️</span>
+        <span *ngIf="isPlaying">⏸️</span>
+      </button>
+
+      <div class="seek-container">
+        <input type="range"
+               class="seek-bar"
+               [value]="currentTime"
+               [max]="videoDuration"
+               (input)="onSeek($event)"
+               step="0.1">
+      </div>
+
+      <div class="time-display">
+        {{ formatTime(currentTime) }} / {{ formatTime(videoDuration) }}
+      </div>
+
+      <div class="volume-container">
+        <button class="control-btn volume-btn" (click)="toggleMute()">
+          <span *ngIf="volume > 0 && !isMuted">🔊</span>
+          <span *ngIf="volume === 0 || isMuted">🔇</span>
+        </button>
+        <input type="range"
+               class="volume-bar"
+               [value]="isMuted ? 0 : volume"
+               [max]="1"
+               [step]="0.1"
+               (input)="onVolumeChange($event)">
+      </div>
     </div>
   </div>
 
@@ -22,10 +55,12 @@
       <div class="time-markers">
         <span class="time-marker" *ngFor="let time of timeMarkers">{{ time }}</span>
       </div>
-      <div class="playhead" [style.left.%]="playheadPosition"></div>
     </div>
 
     <div class="tracks-container">
+      <div class="playhead-overlay">
+        <div class="playhead" [style.left.%]="playheadPosition"></div>
+      </div>
       <div class="track video-track" *ngIf="selectedVideo">
         <div class="track-header">
           <span class="track-label">🎥 Video</span>
@@ -44,7 +79,7 @@
           </span>
           <span class="track-info">{{ audio.name }}</span>
           <div class="track-controls">
-            <button class="mute-btn" [class.muted]="mutedTracks[i]" (click)="toggleMute(i)">
+            <button class="mute-btn" [class.muted]="mutedTracks[i]" (click)="toggleAudioMute(i)">
               {{ mutedTracks[i] ? '🔇' : '🔊' }}
             </button>
             <button class="remove-track" (click)="removeAudioTrack(i)">×</button>

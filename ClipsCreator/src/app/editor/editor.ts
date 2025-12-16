@@ -32,6 +32,13 @@ export class Editor implements AfterViewInit, OnDestroy {
   audioEnded: boolean[] = [];
   trackDurations: number[] = []; // [video_duration, audio1_duration, audio2_duration, ...]
 
+  // Custom controls
+  isPlaying = false;
+  currentTime = 0;
+  videoDuration = 0;
+  volume = 1;
+  isMuted = false;
+
   ngAfterViewInit(): void {
     this.initializeTimeline();
   }
@@ -69,7 +76,67 @@ export class Editor implements AfterViewInit, OnDestroy {
     this.updateTimeline();
   }
 
-  toggleMute(index: number): void {
+  // Custom control methods
+  togglePlayPause(): void {
+    if (!this.videoElement) return;
+
+    const video = this.videoElement.nativeElement;
+    if (this.isPlaying) {
+      video.pause();
+    } else {
+      video.play();
+    }
+  }
+
+  onSeek(event: Event): void {
+    if (!this.videoElement) return;
+
+    const target = event.target as HTMLInputElement;
+    const seekTime = parseFloat(target.value);
+    const video = this.videoElement.nativeElement;
+
+    video.currentTime = seekTime;
+    this.currentTime = seekTime;
+
+    // Seek all audio tracks to the same position
+    this.audioElements.forEach(audio => {
+      if (audio.duration && seekTime <= audio.duration) {
+        audio.currentTime = seekTime;
+      }
+    });
+  }
+
+  toggleMute(): void {
+    if (!this.videoElement) return;
+
+    const video = this.videoElement.nativeElement;
+    this.isMuted = !this.isMuted;
+    video.muted = this.isMuted;
+  }
+
+  onVolumeChange(event: Event): void {
+    if (!this.videoElement) return;
+
+    const target = event.target as HTMLInputElement;
+    const newVolume = parseFloat(target.value);
+
+    this.volume = newVolume;
+    this.isMuted = newVolume === 0;
+
+    const video = this.videoElement.nativeElement;
+    video.volume = newVolume;
+    video.muted = this.isMuted;
+  }
+
+  formatTime(seconds: number): string {
+    if (!seconds || isNaN(seconds)) return '0:00';
+
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  toggleAudioMute(index: number): void {
     this.mutedTracks[index] = !this.mutedTracks[index];
     if (this.audioElements[index]) {
       this.audioElements[index].muted = this.mutedTracks[index];
@@ -84,12 +151,6 @@ export class Editor implements AfterViewInit, OnDestroy {
     for (let i = 0; i <= 60; i += 5) {
       this.timeMarkers.push(this.formatTime(i));
     }
-  }
-
-  private formatTime(seconds: number): string {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
   }
 
   private setupVideoPlayback(): void {
@@ -281,11 +342,17 @@ export class Editor implements AfterViewInit, OnDestroy {
 
     const video = this.videoElement.nativeElement;
 
+    // Initialize custom controls
+    this.videoDuration = video.duration || 0;
+    this.volume = video.volume;
+    this.isMuted = video.muted;
+
     // Start playhead animation
     this.startPlayheadAnimation();
 
     // Play all tracks simultaneously when video starts
     video.addEventListener('play', () => {
+      this.isPlaying = true;
       this.audioElements.forEach((audio, index) => {
         if (!this.mutedTracks[index]) {
           // If audio has ended or hasn't started, start from beginning
@@ -302,11 +369,13 @@ export class Editor implements AfterViewInit, OnDestroy {
 
     // Pause all tracks when video pauses
     video.addEventListener('pause', () => {
+      this.isPlaying = false;
       this.audioElements.forEach(audio => audio.pause());
     });
 
     // Stop all tracks when video ends
     video.addEventListener('ended', () => {
+      this.isPlaying = false;
       this.audioElements.forEach(audio => {
         audio.pause();
         audio.currentTime = 0;
@@ -327,9 +396,17 @@ export class Editor implements AfterViewInit, OnDestroy {
       });
     });
 
-    // Update playhead position
+    // Update playhead position and custom controls
     video.addEventListener('timeupdate', () => {
+      this.currentTime = video.currentTime;
       this.updatePlayheadPosition();
+    });
+
+    // Update duration when metadata loads
+    video.addEventListener('loadedmetadata', () => {
+      this.videoDuration = video.duration;
+      this.volume = video.volume;
+      this.isMuted = video.muted;
     });
   }
 
