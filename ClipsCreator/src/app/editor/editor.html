@@ -1,1 +1,60 @@
-<p>editor works!</p>
+<div class="editor-container">
+  <div class="file-selection">
+    <div class="file-input-group">
+      <label for="video-input">Select Video File:</label>
+      <input type="file" id="video-input" accept="video/*" (change)="onVideoSelected($event)" />
+    </div>
+    <div class="file-input-group">
+      <label for="audio-input">Select Audio Files:</label>
+      <input type="file" id="audio-input" accept="audio/*" multiple (change)="onAudioSelected($event)" />
+    </div>
+  </div>
+
+  <div class="preview-container">
+    <div class="preview">
+      <video #videoElement id="video-player" controls *ngIf="selectedVideo"></video>
+      <div class="no-video" *ngIf="!selectedVideo">Select a video file to start editing</div>
+    </div>
+  </div>
+
+  <div class="timeline-container">
+    <div class="timeline-header">
+      <div class="time-markers">
+        <span class="time-marker" *ngFor="let time of timeMarkers">{{ time }}</span>
+      </div>
+      <div class="playhead" [style.left.%]="playheadPosition"></div>
+    </div>
+
+    <div class="tracks-container">
+      <div class="track video-track" *ngIf="selectedVideo">
+        <div class="track-header">
+          <span class="track-label">🎥 Video</span>
+          <span class="track-info">{{ selectedVideo.name }}</span>
+        </div>
+        <div class="track-waveform">
+          <canvas #videoCanvas class="waveform-canvas" width="1200" height="60"></canvas>
+        </div>
+      </div>
+
+      <div class="track audio-track" *ngFor="let audio of selectedAudios; let i = index">
+        <div class="track-header">
+          <span class="track-label">🎵 Audio {{ i + 1 }}</span>
+          <span class="track-info">{{ audio.name }}</span>
+          <div class="track-controls">
+            <button class="mute-btn" [class.muted]="mutedTracks[i]" (click)="toggleMute(i)">
+              {{ mutedTracks[i] ? '🔇' : '🔊' }}
+            </button>
+            <button class="remove-track" (click)="removeAudioTrack(i)">×</button>
+          </div>
+        </div>
+        <div class="track-waveform">
+          <canvas #audioCanvas class="waveform-canvas" width="1200" height="60"></canvas>
+        </div>
+      </div>
+
+      <div class="no-tracks" *ngIf="!selectedVideo && selectedAudios.length === 0">
+        No tracks loaded - Select video and audio files to start editing
+      </div>
+    </div>
+  </div>
+</div>
